@@ -79,3 +79,15 @@ func TCPCheck(t time.Duration) registry.Option {
 		o.Context = context.WithValue(o.Context, "consul_tcp_check", t)
 	}
 }
+
+func HttpCheck(t time.Duration) registry.Option {
+	return func(o *registry.Options) {
+		if t <= time.Duration(0) {
+			return
+		}
+		if o.Context == nil {
+			o.Context = context.Background()
+		}
+		o.Context = context.WithValue(o.Context, "consul_http_check", t)
+	}
+}
