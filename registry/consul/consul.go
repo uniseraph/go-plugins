@@ -177,6 +177,7 @@ func (c *consulRegistry) Register(s *registry.Service, opts ...registry.Register
 
 	var regTCPCheck bool
 	var regHttpCheck bool
+	var regGrpcCheck bool
 	var regInterval time.Duration
 
 	var options registry.RegisterOptions
@@ -185,7 +186,10 @@ func (c *consulRegistry) Register(s *registry.Service, opts ...registry.Register
 	}
 
 	if c.opts.Context != nil {
-		if httpCheckInterval, ok :=c.opts.Context.Value("consul_http_check").(time.Duration); ok {
+		if grpcCheckInterval, ok := c.opts.Context.Value("consul_grpc_check").(time.Duration); ok {
+			regGrpcCheck = true
+			regInterval = grpcCheckInterval
+		} else if httpCheckInterval, ok := c.opts.Context.Value("consul_http_check").(time.Duration); ok {
 			regHttpCheck = true
 			regInterval = httpCheckInterval
 		} else if tcpCheckInterval, ok := c.opts.Context.Value("consul_tcp_check").(time.Duration); ok {
@@ -233,14 +237,21 @@ func (c *consulRegistry) Register(s *registry.Service, opts ...registry.Register
 		}
 	}
 
-	// encode the tags
-	tags := encodeMetadata(node.Metadata)
+
+	tags := encodeMetadata(c.opts.Context,node.Metadata)
 	tags = append(tags, encodeEndpoints(s.Endpoints)...)
 	tags = append(tags, encodeVersion(s.Version)...)
 
 	var check *consul.AgentServiceCheck
+	if regGrpcCheck {
+		deregTTL := getDeregisterTTL(regInterval)
 
-	if regHttpCheck {
+		check = &consul.AgentServiceCheck{
+			GRPC:                           node.Address,
+			Interval:                       fmt.Sprintf("%v", regInterval),
+			DeregisterCriticalServiceAfter: fmt.Sprintf("%v", deregTTL),
+		}
+	} else if regHttpCheck {
 		deregTTL := getDeregisterTTL(regInterval)
 
 		check = &consul.AgentServiceCheck{
@@ -305,7 +316,7 @@ func (c *consulRegistry) Register(s *registry.Service, opts ...registry.Register
 		return nil
 	}
 
-	if regTCPCheck || regHttpCheck {
+	if regTCPCheck || regHttpCheck || regGrpcCheck {
 		return nil
 	}
 	// pass the healthcheck
@@ -376,7 +387,7 @@ func (c *consulRegistry) GetService(name string) ([]*registry.Service, error) {
 		svc.Nodes = append(svc.Nodes, &registry.Node{
 			Id:       id,
 			Address:  mnet.HostPort(address, s.Service.Port),
-			Metadata: decodeMetadata(s.Service.Tags),
+			Metadata: decodeMetadata(c.opts.Context,s.Service.Tags),
 		})
 	}
 

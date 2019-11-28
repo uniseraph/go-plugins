@@ -8,6 +8,8 @@ import (
 	"github.com/micro/go-micro/registry"
 )
 
+
+
 // Connect specifies services should be registered as Consul Connect services
 func Connect() registry.Option {
 	return func(o *registry.Options) {
@@ -89,5 +91,41 @@ func HttpCheck(t time.Duration) registry.Option {
 			o.Context = context.Background()
 		}
 		o.Context = context.WithValue(o.Context, "consul_http_check", t)
+	}
+}
+
+func GrpcCheck(t time.Duration) registry.Option {
+	return func(o *registry.Options) {
+		if t <= time.Duration(0) {
+			return
+		}
+		if o.Context == nil {
+			o.Context = context.Background()
+		}
+		o.Context = context.WithValue(o.Context, "consul_grpc_check", t)
+	}
+}
+type Encoder interface {
+	 encodeMetadata(md map[string]string ) []string
+}
+type Decoder interface {
+	 decodeMetadata(tags []string) map[string]string
+}
+
+func MetadataEncoder(encoder Encoder) registry.Option  {
+	return func(o *registry.Options) {
+		if o.Context == nil {
+			o.Context = context.Background()
+		}
+		o.Context = context.WithValue(o.Context, "metadata_encoder", encode)
+	}
+}
+
+func MetadataDecoder(decoder Decoder) registry.Option  {
+	return func(o *registry.Options) {
+		if o.Context == nil {
+			o.Context = context.Background()
+		}
+		o.Context = context.WithValue(o.Context, "metadata_decoder", decode)
 	}
 }

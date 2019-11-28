@@ -3,6 +3,7 @@ package consul
 import (
 	"bytes"
 	"compress/zlib"
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"io/ioutil"
@@ -92,7 +93,11 @@ func decodeEndpoints(tags []string) []*registry.Endpoint {
 	return en
 }
 
-func encodeMetadata(md map[string]string) []string {
+func encodeMetadata(ctx context.Context,md map[string]string) []string {
+	encoder, ok := ctx.Value("metadata_encoder").(Encoder)
+	if ok {
+		return encoder.encodeMetadata(md)
+	}
 	var tags []string
 	for k, v := range md {
 		if b, err := json.Marshal(map[string]string{
@@ -105,7 +110,13 @@ func encodeMetadata(md map[string]string) []string {
 	return tags
 }
 
-func decodeMetadata(tags []string) map[string]string {
+func decodeMetadata(ctx context.Context,tags []string) map[string]string {
+
+	decoder, ok := ctx.Value("metadata_decoder").(Decoder)
+	if ok {
+		return decoder.decodeMetadata(tags)
+	}
+
 	md := make(map[string]string)
 
 	var ver byte
