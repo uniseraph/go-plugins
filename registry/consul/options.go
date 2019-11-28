@@ -105,27 +105,23 @@ func GrpcCheck(t time.Duration) registry.Option {
 		o.Context = context.WithValue(o.Context, "consul_grpc_check", t)
 	}
 }
-type Encoder interface {
-	 EncodeMetadata(md map[string]string ) []string
-}
-type Decoder interface {
-	 DecodeMetadata(tags []string) map[string]string
-}
+type EncodeMetadata func(md map[string]string ) []string
+type DecodeMetadata func(tags []string) map[string]string
 
-func MetadataEncoder(encoder Encoder) registry.Option  {
+func MetadataEncoder(fn EncodeMetadata) registry.Option  {
 	return func(o *registry.Options) {
 		if o.Context == nil {
 			o.Context = context.Background()
 		}
-		o.Context = context.WithValue(o.Context, "metadata_encoder", encode)
+		o.Context = context.WithValue(o.Context, "metadata_encoder", fn)
 	}
 }
 
-func MetadataDecoder(decoder Decoder) registry.Option  {
+func MetadataDecoder(fn DecodeMetadata) registry.Option  {
 	return func(o *registry.Options) {
 		if o.Context == nil {
 			o.Context = context.Background()
 		}
-		o.Context = context.WithValue(o.Context, "metadata_decoder", decode)
+		o.Context = context.WithValue(o.Context, "metadata_decoder", fn)
 	}
 }
