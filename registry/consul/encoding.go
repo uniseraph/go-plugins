@@ -96,7 +96,7 @@ func decodeEndpoints(tags []string) []*registry.Endpoint {
 func encodeMetadata(ctx context.Context,md map[string]string) []string {
 	encoder, ok := ctx.Value("metadata_encoder").(Encoder)
 	if ok {
-		return encoder.encodeMetadata(md)
+		return encoder.EncodeMetadata(md)
 	}
 	var tags []string
 	for k, v := range md {
@@ -114,7 +114,7 @@ func decodeMetadata(ctx context.Context,tags []string) map[string]string {
 
 	decoder, ok := ctx.Value("metadata_decoder").(Decoder)
 	if ok {
-		return decoder.decodeMetadata(tags)
+		return decoder.DecodeMetadata(tags)
 	}
 
 	md := make(map[string]string)

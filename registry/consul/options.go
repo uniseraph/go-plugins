@@ -106,10 +106,10 @@ func GrpcCheck(t time.Duration) registry.Option {
 	}
 }
 type Encoder interface {
-	 encodeMetadata(md map[string]string ) []string
+	 EncodeMetadata(md map[string]string ) []string
 }
 type Decoder interface {
-	 decodeMetadata(tags []string) map[string]string
+	 DecodeMetadata(tags []string) map[string]string
 }
 
 func MetadataEncoder(encoder Encoder) registry.Option  {
